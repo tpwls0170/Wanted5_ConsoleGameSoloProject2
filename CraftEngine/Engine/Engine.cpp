@@ -256,7 +256,7 @@ namespace Craft
 	{
 		// 파일 열기 (개행 문자 처리를 쉽게 텍스트 모드로 열기).
 		FILE* file = nullptr;
-		fopen_s(&file, "../Bin/x64/Config/Setting.txt", "rt");
+		fopen_s(&file, "../Resources/Config/Setting.txt", "rt");
 
 		// 예외처리.
 		if (!file)

@@ -46,7 +46,7 @@ void GameLevel::initCreateMap()
 void GameLevel::LoadGameLevelSetting()
 {
 	// 최종 경로 조립.
-	std::string path = std::string("../Bin/x64/Assets/") + "Stage" + std::to_string(currentStage) + "_Setting.txt";
+	std::string path = std::string("../Resources/Assets/") + "Stage" + std::to_string(currentStage) + "_Setting.txt";
 	// 파일 열기 (C-Style).
 	FILE* file = nullptr;
 	fopen_s(&file, path.c_str(), "rt");

@@ -1,0 +1,3 @@
+framerate = 120
+consolwidth = 150
+consolheight = 40
