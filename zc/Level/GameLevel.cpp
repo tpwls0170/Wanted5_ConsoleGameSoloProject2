@@ -1,12 +1,15 @@
 ﻿#include "GameLevel.h"
 #include <Actor/Character/Citizen.h>
+#include <Actor/Character/PoliceActor.h>
 #include <Actor/Enemy/Zombie.h>
 #include <Actor/Gimmick/Gimmick_Exit.h>
+#include <Actor/Gimmick/Gimmick_Wall.h>
 #include <cassert>
 #include <Input/Input.h>
 #include <random>
 #include <Render/Renderer.h>
 
+#include <iostream>
 using namespace Craft;
 void GameLevel::OnInitialized()
 {
@@ -29,11 +32,15 @@ void GameLevel::Tick(float deltaTime)
 
 	if(Input::Get().GetKeyDown(VK_LBUTTON))
 	{
-		SelectActor();
-	}
-	else if(selectBuildType != BuildType::None)
-	{
-		BuildActor();
+		mousePosition = Input::Get().GetMousePosition();
+		if (mousePosition.y > gameSetting.stageHight)
+		{
+			SelectActor();
+		}
+		else
+		{
+			BuildActor();
+		}
 	}
 }
 
@@ -84,25 +91,29 @@ void GameLevel::LoadGameLevelSetting()
 		sscanf_s(token, "%s", key, 20);
 
 		// 키 값을 비교해서 값 설정.
-		if (strcmp(key, "zombieCount") == 0)
+		if (strcmp(key, "zombieMaxCount") == 0)
 		{
-			sscanf_s(token, "zombieCount = %d", &gameSetting.zombieCount);
+			sscanf_s(token, "zombieMaxCount = %d", &gameSetting.zombieMaxCount);
 		}
-		else if (strcmp(key, "citizenCount") == 0)
+		else if (strcmp(key, "citizenMaxCount") == 0)
 		{
-			sscanf_s(token, "citizenCount = %d", &gameSetting.citizenCount);
+			sscanf_s(token, "citizenMaxCount = %d", &gameSetting.citizenMaxCount);
 		}
-		else if (strcmp(key, "policeCount") == 0)
+		else if (strcmp(key, "policeMaxCount") == 0)
 		{
-			sscanf_s(token, "policeCount = %d", &gameSetting.policeCount);
+			sscanf_s(token, "policeMaxCount = %d", &gameSetting.policeMaxCount);
 		}
-		else if (strcmp(key, "soldierCount") == 0)
+		else if (strcmp(key, "soldierMaxCount") == 0)
 		{
-			sscanf_s(token, "soldierCount = %d", &gameSetting.soldierCount);
+			sscanf_s(token, "soldierMaxCount = %d", &gameSetting.soldierMaxCount);
 		}
-		else if (strcmp(key, "shelterCount") == 0)
+		else if (strcmp(key, "shelterMaxCount") == 0)
 		{
-			sscanf_s(token, "shelterCount = %d", &gameSetting.shelterCount);
+			sscanf_s(token, "shelterMaxCount = %d", &gameSetting.shelterMaxCount);
+		}
+		else if (strcmp(key, "wallMaxCount") == 0)
+		{
+			sscanf_s(token, "wallMaxCount = %d", &gameSetting.wallMaxCount);
 		}
 		else if (strcmp(key, "stageWidth") == 0)
 		{
@@ -140,25 +151,9 @@ void GameLevel::initCreateActor()
 	int num = 0;
 	int x = 0;
 	int y = 0;
-	//PrintEmoji(L"🧟",10,5);
-	//PrintEmoji(L"👨",20,10);
-	//PrintEmoji(L"👮",30,15);
-	//PrintEmoji(L"🚪",40,20);
-	for (int i = 0; i < gameSetting.shelterCount; ++i)
-	{
-		do
-		{
-			num = rand();
-			x = (int)num % gameSetting.stageWidth;
-			y = (int)num % gameSetting.stageHight;
-		} while (actorPositionVec[y][x] != 0);
-		actorPositionVec[y][x] = 2;
-		Vector2 gimmick_exitPosition = { x,y };
-		exitPositions.push_back(gimmick_exitPosition);
-		SpawnActor<Gimmick_Exit>(gimmick_exitPosition);
-	}
 
-	for (int i = 0; i < gameSetting.citizenCount; ++i)
+
+	for (int i = 0; i < gameSetting.citizenMaxCount; ++i)
 	{
 		do
 		{
@@ -170,7 +165,21 @@ void GameLevel::initCreateActor()
 		actorPositionVec[y][x] = 1;
 		Vector2 citizenPosition = { x,y };
 		auto citizen = SpawnActor<Citizen>(citizenPosition);
-		citizen->SetTarget(exitPositions[0], actorPositionVec);
+		citizens.emplace_back(citizen);
+	}
+
+	for (int i = 0; i < gameSetting.zombieMaxCount; ++i)
+	{
+		do
+		{
+			num = rand();
+			x = (int)num % gameSetting.stageWidth;
+			y = (int)num % gameSetting.stageHight;
+		} while (actorPositionVec[y][x] != 0);
+
+		actorPositionVec[y][x] = 5;
+		Vector2 zombiePosition = { x,y };
+		auto zombie = SpawnActor<Zombie>(zombiePosition);
 	}
 }
 
@@ -270,7 +279,7 @@ void GameLevel::DrawButtonUI(const ButtonUI& button)
 			Color::White
 		);
 	}
-
+	
 	// 모서리
 	Renderer::Get().Submit(L"+", Vector2(x, y), Color::White);
 	Renderer::Get().Submit(L"+", Vector2(right, y), Color::White);
@@ -280,7 +289,6 @@ void GameLevel::DrawButtonUI(const ButtonUI& button)
 
 void GameLevel::SelectActor()
 {
-	mousePosition = Input::Get().GetMousePosition();
 	if (mousePosition.x >= exitButton.position.x &&
 		mousePosition.x < exitButton.position.x + exitButton.width &&
 		mousePosition.y >= exitButton.position.y &&
@@ -306,7 +314,56 @@ void GameLevel::SelectActor()
 
 void GameLevel::BuildActor()
 {
+	if (actorPositionVec[mousePosition.y][mousePosition.x] == 0)
+	{
+		switch (selectBuildType)
+		{
+		case GameLevel::None:
+			break;
+		case GameLevel::Wall:
+		{
+			if (gameSetting.wallMaxCount > wallCount)
+			{
+				actorPositionVec[mousePosition.y][mousePosition.x] = 3;
+				Vector2 gimmick_wallPosition = { mousePosition.x,mousePosition.y };
+				SpawnActor<Gimmick_Wall>(gimmick_wallPosition);
+				wallCount++;
+			}
+		}
+			break;
+		case GameLevel::Police:
+		{
+			if (gameSetting.policeMaxCount > policeCount)
+			{
+				actorPositionVec[mousePosition.y][mousePosition.x] = 4;
+				Vector2 policePosition = { mousePosition.x,mousePosition.y };
+				SpawnActor<PoliceActor>(policePosition);
+				policeCount++;
+			}
+		}
+			break;
+		case GameLevel::Exit:
+		{
+			if (gameSetting.shelterMaxCount > shelterCount)
+			{
+				actorPositionVec[mousePosition.y][mousePosition.x] = 2;
+				Vector2 gimmick_exitPosition = { mousePosition.x,mousePosition.y };
+				exitPositions.push_back(gimmick_exitPosition);
+				SpawnActor<Gimmick_Exit>(gimmick_exitPosition);
+				shelterCount++;
 
+				for (auto citizen : citizens)
+				{
+					citizen->SetTarget(exitPositions[0], actorPositionVec);
+				}
+			}
+		}
+			break;
+		default:
+			break;
+		}
+	}
+	
 }
 
 std::wstring GameLevel::GetBuildTypeName(BuildType type)

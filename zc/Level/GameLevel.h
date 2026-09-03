@@ -3,17 +3,19 @@
 #include <Math/Vector2.h>
 #include <vector>
 
+class Citizen;
 class GameLevel : public Craft::Level
 {
 	struct GameSetting
 	{
 		int stageWidth = 0;
 		int stageHight = 0;
-		int zombieCount = 0;
-		int citizenCount = 0;
-		int policeCount = 0;
-		int soldierCount = 0;
-		int shelterCount = 0;
+		int zombieMaxCount = 0;
+		int citizenMaxCount = 0;
+		int policeMaxCount = 0;
+		int soldierMaxCount = 0;
+		int shelterMaxCount = 0;
+		int wallMaxCount = 0;
 	};
 
 	enum BuildType
@@ -48,12 +50,21 @@ private:
 private:
 	GameSetting gameSetting;
 	int currentStage = 1;
+	// 0 none 1 시민 2 탈출구 3 벽 4 경찰 5 좀비
 	std::vector<std::vector<int>> actorPositionVec;
 	std::vector<Craft::Vector2> exitPositions;
+	std::vector<std::shared_ptr<Citizen>> citizens;
 	Craft::Vector2 mousePosition = Craft::Vector2::Zero;
 	BuildType selectBuildType = BuildType::None;
 	ButtonUI exitButton;
 	ButtonUI wallButton;
 	ButtonUI policeButton;
+	
+	int zombieCount = 0;
+	int citizenCount = 0;
+	int policeCount = 0;
+	int soldierCount = 0;
+	int shelterCount = 0;
+	int wallCount = 0;
 };
 

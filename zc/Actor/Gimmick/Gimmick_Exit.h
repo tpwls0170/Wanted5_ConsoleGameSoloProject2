@@ -3,6 +3,7 @@
 
 class Gimmick_Exit : public Craft::Actor
 {
+	TYPE_DECLARATIONS(Gimmick_Exit, Actor);
 public:
 	Gimmick_Exit(const Craft::Vector2& position);
 private:
