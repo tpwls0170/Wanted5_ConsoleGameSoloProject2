@@ -8,14 +8,23 @@
 #include <Input/Input.h>
 #include <random>
 #include <Render/Renderer.h>
+#include <limits>
 
 #include <iostream>
 using namespace Craft;
 void GameLevel::OnInitialized()
 {
 	Level::OnInitialized();
-	
+
 	LoadGameLevelSetting();
+	quadTree = std::make_unique<QuadTree>(
+		Rect{
+			0,
+			0,
+			static_cast<float>(gameSetting.stageWidth),
+			static_cast<float>(gameSetting.stageHight)
+		});
+
 	actorPositionVec.resize(gameSetting.stageHight);
 
 	for (auto& row : actorPositionVec)
@@ -42,6 +51,7 @@ void GameLevel::Tick(float deltaTime)
 			BuildActor();
 		}
 	}
+	UpdateZombieAI();
 }
 
 void GameLevel::initCreateMap()
@@ -166,6 +176,7 @@ void GameLevel::initCreateActor()
 		Vector2 citizenPosition = { x,y };
 		auto citizen = SpawnActor<Citizen>(citizenPosition);
 		citizens.emplace_back(citizen);
+		quadTree->Insert(citizen.get());
 	}
 
 	for (int i = 0; i < gameSetting.zombieMaxCount; ++i)
@@ -180,6 +191,8 @@ void GameLevel::initCreateActor()
 		actorPositionVec[y][x] = 5;
 		Vector2 zombiePosition = { x,y };
 		auto zombie = SpawnActor<Zombie>(zombiePosition);
+		zombies.emplace_back(zombie);
+		quadTree->Insert(zombie.get());
 	}
 }
 
@@ -337,8 +350,9 @@ void GameLevel::BuildActor()
 			{
 				actorPositionVec[mousePosition.y][mousePosition.x] = 4;
 				Vector2 policePosition = { mousePosition.x,mousePosition.y };
-				SpawnActor<PoliceActor>(policePosition);
+				auto policeActor = SpawnActor<PoliceActor>(policePosition);
 				policeCount++;
+				quadTree->Insert(policeActor.get());
 			}
 		}
 			break;
@@ -384,4 +398,107 @@ std::wstring GameLevel::GetBuildTypeName(BuildType type)
 	}
 
 	return L"None";
+}
+
+void GameLevel::UpdateZombieAI()
+{
+	if (!zombies.empty())
+	{
+		for (auto zombie : zombies)
+		{
+			if (zombie->HasPath())
+			{
+				continue;
+			}
+
+			Vector2 zombiePosition = zombie->GetPosition();
+
+			Rect searchArea{
+				zombiePosition.x - 5,
+				zombiePosition.y - 5,
+				20,
+				20
+			};
+
+			std::vector<Actor*> nearbyActors =
+				quadTree->Query(searchArea);
+
+			int citizenCount = 0;
+			int policeCount = 0;
+			int zombieCount = 0;
+
+			Actor* nearestActor = nullptr;
+			int nearestDistance = (std::numeric_limits<int>::max)();
+			for (Actor* actor : nearbyActors)
+			{
+				if (actor == zombie.get())
+				{
+					continue;
+				}
+
+				if (dynamic_cast<Citizen*>(actor) != nullptr)
+				{
+					++citizenCount;
+					int distance =
+						std::abs(zombiePosition.x - actor->GetPosition().x) +
+						std::abs(zombiePosition.y - actor->GetPosition().y);
+
+					if (distance < nearestDistance)
+					{
+						nearestDistance = distance;
+						nearestActor = actor;
+					}
+				}
+				else if (dynamic_cast<PoliceActor*>(actor) != nullptr)
+				{
+					++policeCount;
+				}
+				else if (dynamic_cast<Zombie*>(actor) != nullptr)
+				{
+					++zombieCount;
+				}
+			}
+
+			if (nearestActor != nullptr)
+			{
+				Vector2 citizenPosition = nearestActor->GetPosition();
+
+				const Vector2 directions[4] =
+				{
+					{ 0, -1 },
+					{ 0,  1 },
+					{-1,  0 },
+					{ 1,  0 }
+				};
+				
+				int width = static_cast<int>(actorPositionVec[0].size());
+				int height = static_cast<int>(actorPositionVec.size());
+
+				for (const Vector2& direction : directions)
+				{
+					Vector2 targetPosition =
+					{
+						citizenPosition.x + direction.x,
+						citizenPosition.y + direction.y
+					};
+
+					// 여기서 범위 검사
+					if (targetPosition.x < 0 ||
+					targetPosition.x >= width ||
+						targetPosition.y < 0 ||
+						targetPosition.y >= height)
+						{
+							continue;
+}
+					// 여기서 grid 검사
+					if (actorPositionVec[targetPosition.y][targetPosition.x] == 0)
+					{
+						zombie->SetTarget(targetPosition, actorPositionVec);
+						break;
+					}
+
+				}
+			}
+		}
+	}
 }

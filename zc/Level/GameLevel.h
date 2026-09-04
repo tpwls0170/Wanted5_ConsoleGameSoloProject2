@@ -2,8 +2,10 @@
 #include <Level/Level.h>
 #include <Math/Vector2.h>
 #include <vector>
+#include <Algorithm/QuadTree.h>
 
 class Citizen;
+class Zombie;
 class GameLevel : public Craft::Level
 {
 	struct GameSetting
@@ -47,6 +49,7 @@ private:
 	void SelectActor();
 	void BuildActor();
 	std::wstring GetBuildTypeName(BuildType type);
+	void UpdateZombieAI();
 private:
 	GameSetting gameSetting;
 	int currentStage = 1;
@@ -54,12 +57,15 @@ private:
 	std::vector<std::vector<int>> actorPositionVec;
 	std::vector<Craft::Vector2> exitPositions;
 	std::vector<std::shared_ptr<Citizen>> citizens;
+	std::vector<std::shared_ptr<Zombie>> zombies;
 	Craft::Vector2 mousePosition = Craft::Vector2::Zero;
 	BuildType selectBuildType = BuildType::None;
 	ButtonUI exitButton;
 	ButtonUI wallButton;
 	ButtonUI policeButton;
-	
+
+	std::unique_ptr<Craft::QuadTree> quadTree;
+
 	int zombieCount = 0;
 	int citizenCount = 0;
 	int policeCount = 0;

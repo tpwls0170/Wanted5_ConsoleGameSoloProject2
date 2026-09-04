@@ -1,4 +1,5 @@
 ﻿#include "Astar.h"
+#include <vector>
 
 using namespace Craft;
 

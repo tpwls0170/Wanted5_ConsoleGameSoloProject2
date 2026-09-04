@@ -1,11 +1,6 @@
 ﻿#include "Citizen.h"
-#include <Algorithm/Astar.h>
 #include <Render/Renderer.h>
-#include <Actor/Gimmick/Gimmick_Exit.h>
 
-// 탈출구를 설치
-// 시민은 탈출구가 없으면 멍때리다가
-// 탈출구 설치되면 길찾기 알고리즘 시작
 using namespace Craft;
 Citizen::Citizen(const Craft::Vector2& position)
     : Actor(L"C", position,Color::White)
