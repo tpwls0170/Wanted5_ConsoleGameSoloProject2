@@ -1,4 +1,5 @@
 ﻿#include "Gimmick_Exit.h"
+#include <Actor/Character/Citizen.h>
 
 using namespace Craft;
 Gimmick_Exit::Gimmick_Exit(const Craft::Vector2& position)
@@ -9,5 +10,8 @@ Gimmick_Exit::Gimmick_Exit(const Craft::Vector2& position)
 
 void Gimmick_Exit::OnCollision(const std::shared_ptr<Actor>&other)
 {
-
+	if (other->IsTypeOf<Citizen>())
+	{
+		other->Destroy();
+	}
 }

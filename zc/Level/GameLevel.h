@@ -3,6 +3,7 @@
 #include <Math/Vector2.h>
 #include <vector>
 #include <Algorithm/QuadTree.h>
+#include <Actor/Actor.h>
 
 class Citizen;
 class Zombie;
@@ -36,6 +37,12 @@ class GameLevel : public Craft::Level
 		BuildType type;
 	};
 
+public:
+	bool IsCitizenAt(
+		const Craft::Vector2& position,
+		const Citizen* except);
+	void CreateZombie(const Craft::Vector2 position);
+	void UpdateQuadTree(Craft::Actor* actor);
 private:
 	virtual void OnInitialized();
 	virtual void Tick(float deltaTime) override;
@@ -50,6 +57,7 @@ private:
 	void BuildActor();
 	std::wstring GetBuildTypeName(BuildType type);
 	void UpdateZombieAI();
+	void RemoveDestroyedCitizens();
 private:
 	GameSetting gameSetting;
 	int currentStage = 1;

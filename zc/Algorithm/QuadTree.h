@@ -160,12 +160,47 @@ namespace Craft
 					}
 				}
 			}
+			bool Update(Actor* actor)
+			{
+				if (Remove(actor))
+				{
+					return Insert(actor);
+				}
+
+				return false;
+			}
+
+			bool Remove(Actor* actor)
+			{
+				auto it = std::find(actors.begin(), actors.end(), actor);
+
+				if (it != actors.end())
+				{
+					actors.erase(it);
+					return true;
+				}
+
+				for (int i = 0; i < ChildCount; ++i)
+				{
+					if (childrens[i] != nullptr)
+					{
+						if (childrens[i]->Remove(actor))
+						{
+							return true;
+						}
+					}
+				}
+
+				return false;
+			}
 		};
 
 	public:
 		QuadTree(const Rect& bounds);
 		bool Insert(Actor* actor);
 		std::vector<Actor*> Query(const Rect& area);
+		bool Update(Actor* actor);
+		bool Remove(Actor* actor);
 	private:
 		std::unique_ptr<Node> root;
 	};

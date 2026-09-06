@@ -1,4 +1,6 @@
 ﻿#include "Zombie.h"
+#include <Actor/Character/Citizen.h>
+#include <Level/GameLevel.h>
 
 #include <iostream>
 using namespace Craft;
@@ -28,13 +30,14 @@ void Zombie::Tick(float deltaTime)
         return;
     }
 
-    std::cout << "Zombie Move : "
-        << path[currentPathIndex].x << ", "
-        << path[currentPathIndex].y << std::endl;
-
     Vector2 nextPosition = path[currentPathIndex];
 
     SetPosition(nextPosition);
+
+    if (gameLevel != nullptr)
+    {
+        gameLevel->UpdateQuadTree(this);
+    }
 
     ++currentPathIndex;
 }
@@ -54,10 +57,40 @@ void Zombie::SetTarget(const Craft::Vector2& target, const std::vector<std::vect
 
 void Zombie::OnCollision(const std::shared_ptr<Actor>&other)
 {
+    if (other->IsTypeOf<Citizen>())
+    {
+        if (gameLevel != nullptr)
+        {
+            gameLevel->CreateZombie(other->GetPosition());
+        }
 
+        ClearPath();
+        other->Destroy();
+    }
+}
+
+bool Zombie::HasTargetCitizen() const
+{
+    return !targetCitizen.expired();
 }
 
 bool Zombie::HasPath() const
 {
     return !path.empty() && currentPathIndex < path.size();
+}
+
+void Zombie::SetGameLevel(GameLevel* level)
+{
+    gameLevel = level;
+}
+
+void Zombie::ClearPath()
+{
+    path.clear();
+    currentPathIndex = 0;
+}
+
+void Zombie::SetTargetCitizen(const std::shared_ptr<Citizen>& citizen)
+{
+    targetCitizen = citizen;
 }

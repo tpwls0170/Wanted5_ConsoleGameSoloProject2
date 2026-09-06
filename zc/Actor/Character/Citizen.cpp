@@ -1,5 +1,6 @@
 ﻿#include "Citizen.h"
 #include <Render/Renderer.h>
+#include <Level/GameLevel.h>
 
 using namespace Craft;
 Citizen::Citizen(const Craft::Vector2& position)
@@ -27,8 +28,18 @@ void Citizen::Tick(float deltaTime)
     {
         return;
     }
+    Vector2 nextPosition = path[currentPathIndex];
+    if (gameLevel->IsCitizenAt(nextPosition, this))
+    {
+        return;
+    }
 
-    SetPosition(path[currentPathIndex]);
+    SetPosition(nextPosition);
+
+    if (gameLevel != nullptr)
+    {
+        gameLevel->UpdateQuadTree(this);
+    }
 
     ++currentPathIndex;
 }
@@ -69,4 +80,9 @@ void Citizen::SetTarget(
     );
 
     currentPathIndex = 0;
+}
+
+void Citizen::SetGameLevel(GameLevel* level)
+{
+    gameLevel = level;
 }

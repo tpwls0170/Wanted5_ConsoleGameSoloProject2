@@ -3,6 +3,8 @@
 #include <Algorithm/Astar.h>
 #include <vector>
 
+class GameLevel;
+
 class Citizen : public Craft::Actor
 {
 	TYPE_DECLARATIONS(Citizen, Actor);
@@ -12,7 +14,7 @@ public:
 
 	void SetTarget(const Craft::Vector2& target,
 		const std::vector<std::vector<int>>& grid);
-
+	void SetGameLevel(GameLevel* level);
 private:
 	// 이벤트 함수 오버라이드.
 	virtual void Tick(float deltaTime) override;
@@ -20,6 +22,7 @@ private:
 	// 충돌 이벤트 함수 오버라이드.
 	virtual void OnCollision(const std::shared_ptr<Actor>& other) override;
 	virtual void Draw() override;
+
 private:
 	Craft::Astar astar;
 	float moveSpeed = 0.0f;
@@ -27,5 +30,6 @@ private:
 	int currentPathIndex = 1;
 	std::vector<Craft::Vector2> path;
 	Craft::Vector2 target;
+	GameLevel* gameLevel = nullptr;
 };
 

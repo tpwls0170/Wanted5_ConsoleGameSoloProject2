@@ -9,6 +9,7 @@
 #include <random>
 #include <Render/Renderer.h>
 #include <limits>
+#include <algorithm>
 
 #include <iostream>
 using namespace Craft;
@@ -51,6 +52,7 @@ void GameLevel::Tick(float deltaTime)
 			BuildActor();
 		}
 	}
+	RemoveDestroyedCitizens();
 	UpdateZombieAI();
 }
 
@@ -175,6 +177,7 @@ void GameLevel::initCreateActor()
 		actorPositionVec[y][x] = 1;
 		Vector2 citizenPosition = { x,y };
 		auto citizen = SpawnActor<Citizen>(citizenPosition);
+		citizen->SetGameLevel(this);
 		citizens.emplace_back(citizen);
 		quadTree->Insert(citizen.get());
 	}
@@ -190,9 +193,7 @@ void GameLevel::initCreateActor()
 
 		actorPositionVec[y][x] = 5;
 		Vector2 zombiePosition = { x,y };
-		auto zombie = SpawnActor<Zombie>(zombiePosition);
-		zombies.emplace_back(zombie);
-		quadTree->Insert(zombie.get());
+		CreateZombie(zombiePosition);
 	}
 }
 
@@ -400,12 +401,31 @@ std::wstring GameLevel::GetBuildTypeName(BuildType type)
 	return L"None";
 }
 
+void GameLevel::CreateZombie(const Craft::Vector2 position)
+{
+	auto zombie = SpawnActor<Zombie>(position);
+	zombie->SetGameLevel(this);
+	zombies.emplace_back(zombie);
+	quadTree->Insert(zombie.get());
+}
+
+void GameLevel::UpdateQuadTree(Craft::Actor* actor)
+{
+	quadTree->Update(actor);
+}
+
+
 void GameLevel::UpdateZombieAI()
 {
 	if (!zombies.empty())
 	{
 		for (auto zombie : zombies)
 		{
+			if (!zombie->HasTargetCitizen())
+			{
+				zombie->ClearPath();
+			}
+
 			if (zombie->HasPath())
 			{
 				continue;
@@ -461,44 +481,64 @@ void GameLevel::UpdateZombieAI()
 
 			if (nearestActor != nullptr)
 			{
-				Vector2 citizenPosition = nearestActor->GetPosition();
+				std::shared_ptr<Citizen> citizen;
 
-				const Vector2 directions[4] =
+				for (auto& currentCitizen : citizens)
 				{
-					{ 0, -1 },
-					{ 0,  1 },
-					{-1,  0 },
-					{ 1,  0 }
-				};
-				
-				int width = static_cast<int>(actorPositionVec[0].size());
-				int height = static_cast<int>(actorPositionVec.size());
-
-				for (const Vector2& direction : directions)
-				{
-					Vector2 targetPosition =
+					if (currentCitizen.get() == nearestActor)
 					{
-						citizenPosition.x + direction.x,
-						citizenPosition.y + direction.y
-					};
-
-					// 여기서 범위 검사
-					if (targetPosition.x < 0 ||
-					targetPosition.x >= width ||
-						targetPosition.y < 0 ||
-						targetPosition.y >= height)
-						{
-							continue;
-}
-					// 여기서 grid 검사
-					if (actorPositionVec[targetPosition.y][targetPosition.x] == 0)
-					{
-						zombie->SetTarget(targetPosition, actorPositionVec);
+						citizen = currentCitizen;
 						break;
 					}
-
 				}
+
+				if (citizen == nullptr)
+				{
+					continue;
+				}
+
+				zombie->SetTargetCitizen(citizen);
+
+				Vector2 citizenPosition = citizen->GetPosition();
+				zombie->SetTarget(citizenPosition, actorPositionVec);
 			}
 		}
 	}
+}
+
+void GameLevel::RemoveDestroyedCitizens()
+{
+	for (auto it = citizens.begin(); it != citizens.end();)
+	{
+		if ((*it)->HasExpired())
+		{
+			quadTree->Remove(it->get());
+
+			it = citizens.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+}
+
+bool GameLevel::IsCitizenAt(
+    const Craft::Vector2& position,
+    const Citizen* except)
+{
+	for (auto citizen : citizens)
+	{	
+		if (citizen.get() == except)
+		{
+			continue;
+		}
+
+		if (citizen->GetPosition() == position)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

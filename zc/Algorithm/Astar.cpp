@@ -127,17 +127,6 @@ std::vector<Vector2> Astar::FindPath(
                 continue;
             }
 
-            // 0 = 이동 가능
-            // 1 = 시민
-            // 2 = 탈출구
-            //
-            // 탈출구는 이동 가능해야 하므로
-            // 0 또는 2만 통과
-            if (grid[nextPosition.y][nextPosition.x] == 1)
-            {
-                continue;
-            }
-
             int newGCost = currentNode->gCost + 1;
 
             Node* nextNode = nullptr;
