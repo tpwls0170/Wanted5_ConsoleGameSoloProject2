@@ -41,7 +41,7 @@ public:
 	bool IsCitizenAt(
 		const Craft::Vector2& position,
 		const Citizen* except);
-	void CreateZombie(const Craft::Vector2 position);
+	void CreateZombie(const Craft::Vector2 position, bool isInfection);
 	void UpdateQuadTree(Craft::Actor* actor);
 private:
 	virtual void OnInitialized();

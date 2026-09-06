@@ -45,11 +45,23 @@ void Zombie::Tick(float deltaTime)
 void Zombie::SetTarget(const Craft::Vector2& target, const std::vector<std::vector<int>>&grid)
 {
     this->target = target;
+    std::vector<std::vector<int>> zombieGrid = grid;
+
+    for (auto& row : zombieGrid)
+    {
+        for (int& cell : row)
+        {
+            if (cell == 2)
+            {
+                cell = 3;
+            }
+        }
+    }
 
     path = astar.FindPath(
         GetPosition(),
         target,
-        grid
+        zombieGrid
     );
 
     currentPathIndex = 0;
