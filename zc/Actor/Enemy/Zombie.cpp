@@ -61,7 +61,7 @@ void Zombie::OnCollision(const std::shared_ptr<Actor>&other)
     {
         if (gameLevel != nullptr)
         {
-            gameLevel->CreateZombie(other->GetPosition());
+            gameLevel->CreateZombie(other->GetPosition(), true);
         }
 
         ClearPath();

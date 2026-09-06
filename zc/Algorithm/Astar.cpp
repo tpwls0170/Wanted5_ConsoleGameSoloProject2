@@ -110,6 +110,11 @@ std::vector<Vector2> Astar::FindPath(
                 continue;
             }
 
+            if (grid[nextPosition.y][nextPosition.x] == 3)
+            {
+                continue;
+            }
+
             // 이미 탐색한 위치인지 확인
             bool isClosed = false;
 

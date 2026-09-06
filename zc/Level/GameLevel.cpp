@@ -193,7 +193,7 @@ void GameLevel::initCreateActor()
 
 		actorPositionVec[y][x] = 5;
 		Vector2 zombiePosition = { x,y };
-		CreateZombie(zombiePosition);
+		CreateZombie(zombiePosition, false);
 	}
 }
 
@@ -401,8 +401,43 @@ std::wstring GameLevel::GetBuildTypeName(BuildType type)
 	return L"None";
 }
 
-void GameLevel::CreateZombie(const Craft::Vector2 position)
+void GameLevel::CreateZombie(const Craft::Vector2 position, bool isInfection)
 {
+	if (isInfection)
+	{
+		const Vector2 directions[4] =
+		{
+			{ 0, -1 },
+			{ 0,  1 },
+			{-1,  0 },
+			{ 1,  0 }
+		};
+
+		for (int i = 0; i < std::size(directions); ++i)
+		{
+			Vector2 nextPosition = position + directions[i];
+
+			if (nextPosition.x < 0 ||
+				nextPosition.x >= gameSetting.stageWidth ||
+				nextPosition.y < 0 ||
+				nextPosition.y >= gameSetting.stageHight)
+			{
+				continue;
+			}
+
+			if (actorPositionVec[nextPosition.y][nextPosition.x] == 0)
+			{
+				auto zombie = SpawnActor<Zombie>(nextPosition);
+				zombie->SetGameLevel(this);
+				zombies.emplace_back(zombie);
+				quadTree->Insert(zombie.get());
+				break;
+			}
+		}
+
+		return;
+	}
+
 	auto zombie = SpawnActor<Zombie>(position);
 	zombie->SetGameLevel(this);
 	zombies.emplace_back(zombie);
