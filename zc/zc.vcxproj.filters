@@ -51,6 +51,9 @@
     <ClCompile Include="Algorithm\QuadTree.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Actor\PoliceBullet.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Level\GameLevel.h">
@@ -84,6 +87,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Algorithm\QuadTree.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor\PoliceBullet.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

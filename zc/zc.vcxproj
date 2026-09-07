@@ -101,6 +101,7 @@
     <ClCompile Include="Actor\Character\Citizen.cpp" />
     <ClCompile Include="Actor\Camera\Camera.cpp" />
     <ClCompile Include="Actor\Gimmick\Gimmick_Wall.cpp" />
+    <ClCompile Include="Actor\PoliceBullet.cpp" />
     <ClCompile Include="Algorithm\Astar.cpp" />
     <ClCompile Include="Algorithm\QuadTree.cpp" />
     <ClCompile Include="Game\GameLevelManager.cpp" />
@@ -115,6 +116,7 @@
     <ClInclude Include="Actor\Character\Citizen.h" />
     <ClInclude Include="Actor\Camera\Camera.h" />
     <ClInclude Include="Actor\Gimmick\Gimmick_Wall.h" />
+    <ClInclude Include="Actor\PoliceBullet.h" />
     <ClInclude Include="Algorithm\Astar.h" />
     <ClInclude Include="Algorithm\QuadTree.h" />
     <ClInclude Include="Game\GameLevelManager.h" />

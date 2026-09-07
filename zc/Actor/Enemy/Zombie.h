@@ -16,8 +16,9 @@ public:
 	bool HasPath() const;
 	void SetGameLevel(GameLevel* level);
 	void ClearPath();
-	void SetTargetCitizen(const std::shared_ptr<Citizen>& citizen);
-	bool HasTargetCitizen() const;
+	void SetTargetActor(const std::shared_ptr<Actor>& actor);
+	const std::weak_ptr<Actor> GetTargetActor();
+	bool HasTargetActor() const;
 private:
 	// 이벤트 함수 오버라이드.
 	virtual void Tick(float deltaTime) override;
@@ -32,6 +33,6 @@ private:
 	std::vector<Craft::Vector2> path;
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
-	std::weak_ptr<Citizen> targetCitizen;
+	std::weak_ptr<Actor> targetActor;
 };
 

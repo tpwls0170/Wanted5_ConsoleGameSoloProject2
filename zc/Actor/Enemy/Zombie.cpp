@@ -1,5 +1,6 @@
 ﻿#include "Zombie.h"
 #include <Actor/Character/Citizen.h>
+#include <Actor/Character/PoliceActor.h>
 #include <Level/GameLevel.h>
 
 #include <iostream>
@@ -75,15 +76,22 @@ void Zombie::OnCollision(const std::shared_ptr<Actor>&other)
         {
             gameLevel->CreateZombie(other->GetPosition(), true);
         }
-
-        ClearPath();
-        other->Destroy();
     }
+    else if (other->IsTypeOf<PoliceActor>())
+    {
+        if (gameLevel != nullptr)
+        {
+            gameLevel->CreateZombie(other->GetPosition(), true);
+        }
+    }
+
+    ClearPath();
+    other->Destroy();
 }
 
-bool Zombie::HasTargetCitizen() const
+bool Zombie::HasTargetActor() const
 {
-    return !targetCitizen.expired();
+    return !targetActor.expired();
 }
 
 bool Zombie::HasPath() const
@@ -102,7 +110,12 @@ void Zombie::ClearPath()
     currentPathIndex = 0;
 }
 
-void Zombie::SetTargetCitizen(const std::shared_ptr<Citizen>& citizen)
+void Zombie::SetTargetActor(const std::shared_ptr<Actor>& actor)
 {
-    targetCitizen = citizen;
+    targetActor = actor;
+}
+
+const std::weak_ptr<Actor> Zombie::GetTargetActor()
+{
+    return targetActor;
 }

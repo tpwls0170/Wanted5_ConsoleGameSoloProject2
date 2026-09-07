@@ -54,6 +54,7 @@ void GameLevel::Tick(float deltaTime)
 	}
 	RemoveDestroyedCitizens();
 	UpdateZombieAI();
+	UpdatePoliceAI();
 }
 
 void GameLevel::initCreateMap()
@@ -353,6 +354,8 @@ void GameLevel::BuildActor()
 				Vector2 policePosition = { mousePosition.x,mousePosition.y };
 				auto policeActor = SpawnActor<PoliceActor>(policePosition);
 				policeCount++;
+				polices.emplace_back(policeActor);
+				policeActor->SetGameLevel(this);
 				quadTree->Insert(policeActor.get());
 			}
 		}
@@ -456,14 +459,9 @@ void GameLevel::UpdateZombieAI()
 	{
 		for (auto zombie : zombies)
 		{
-			if (!zombie->HasTargetCitizen())
+			if (!zombie->HasTargetActor())
 			{
 				zombie->ClearPath();
-			}
-
-			if (zombie->HasPath())
-			{
-				continue;
 			}
 
 			Vector2 zombiePosition = zombie->GetPosition();
@@ -471,8 +469,8 @@ void GameLevel::UpdateZombieAI()
 			Rect searchArea{
 				zombiePosition.x - 5,
 				zombiePosition.y - 5,
-				20,
-				20
+				30,
+				30
 			};
 
 			std::vector<Actor*> nearbyActors =
@@ -482,8 +480,11 @@ void GameLevel::UpdateZombieAI()
 			int policeCount = 0;
 			int zombieCount = 0;
 
-			Actor* nearestActor = nullptr;
-			int nearestDistance = (std::numeric_limits<int>::max)();
+			Actor* nearestCitizen = nullptr;
+			Actor* nearestPolice = nullptr;
+
+			int citizenNearestDistance = (std::numeric_limits<int>::max)();
+			int polieNearesDistance = (std::numeric_limits<int>::max)();
 			for (Actor* actor : nearbyActors)
 			{
 				if (actor == zombie.get())
@@ -498,15 +499,24 @@ void GameLevel::UpdateZombieAI()
 						std::abs(zombiePosition.x - actor->GetPosition().x) +
 						std::abs(zombiePosition.y - actor->GetPosition().y);
 
-					if (distance < nearestDistance)
+					if (distance < citizenNearestDistance)
 					{
-						nearestDistance = distance;
-						nearestActor = actor;
+						citizenNearestDistance = distance;
+						nearestCitizen = actor;
 					}
 				}
 				else if (dynamic_cast<PoliceActor*>(actor) != nullptr)
 				{
 					++policeCount;
+					int distance =
+						std::abs(zombiePosition.x - actor->GetPosition().x) +
+						std::abs(zombiePosition.y - actor->GetPosition().y);
+
+					if (distance < polieNearesDistance)
+					{
+						polieNearesDistance = distance;
+						nearestPolice = actor;
+					}
 				}
 				else if (dynamic_cast<Zombie*>(actor) != nullptr)
 				{
@@ -514,13 +524,54 @@ void GameLevel::UpdateZombieAI()
 				}
 			}
 
-			if (nearestActor != nullptr)
+			if (zombie->HasPath())
+			{
+				if (nearestPolice != nullptr)
+				{
+					auto target = zombie->GetTargetActor().lock();
+					if (auto police = dynamic_cast<PoliceActor*>(target.get()))
+					{
+						continue;
+					}
+					else if (auto citizen = dynamic_cast<Citizen*>(target.get()))
+					{
+						zombie->ClearPath();
+					}
+				}
+				else
+					continue;
+			}
+
+			if (nearestPolice != nullptr)
+			{
+				std::shared_ptr<PoliceActor> police;
+
+				for (auto& currentPolice : polices)
+				{
+					if (currentPolice.get() == nearestPolice)
+					{
+						police = currentPolice;
+						break;
+					}
+				}
+
+				if (police == nullptr)
+				{
+					continue;
+				}
+
+				zombie->SetTargetActor(police);
+
+				Vector2 policePosition = police->GetPosition();
+				zombie->SetTarget(policePosition, actorPositionVec);
+			}
+			else if (nearestCitizen != nullptr)
 			{
 				std::shared_ptr<Citizen> citizen;
 
 				for (auto& currentCitizen : citizens)
 				{
-					if (currentCitizen.get() == nearestActor)
+					if (currentCitizen.get() == nearestCitizen)
 					{
 						citizen = currentCitizen;
 						break;
@@ -532,10 +583,97 @@ void GameLevel::UpdateZombieAI()
 					continue;
 				}
 
-				zombie->SetTargetCitizen(citizen);
+				zombie->SetTargetActor(citizen);
 
 				Vector2 citizenPosition = citizen->GetPosition();
 				zombie->SetTarget(citizenPosition, actorPositionVec);
+			}
+		}
+	}
+}
+
+void GameLevel::UpdatePoliceAI()
+{
+	if (!polices.empty())
+	{
+		for (auto police : polices)
+		{
+			if (!police->HasTargetZombie())
+			{
+				police->ClearPath();
+			}
+
+			if (police->HasPath())
+			{
+				continue;
+			}
+
+			Vector2 policePosition = police->GetPosition();
+
+			Rect searchArea{
+				policePosition.x - 5,
+				policePosition.y - 5,
+				35,
+				35
+			};
+
+			std::vector<Actor*> nearbyActors =
+				quadTree->Query(searchArea);
+
+			int zombieCount = 0;
+
+			Actor* nearestActor = nullptr;
+			int nearestDistance = (std::numeric_limits<int>::max)();
+			for (Actor* actor : nearbyActors)
+			{
+				if (actor == police.get())
+				{
+					continue;
+				}
+
+				Zombie* zombieActor = dynamic_cast<Zombie*>(actor);
+
+				if (dynamic_cast<Zombie*>(actor) != nullptr)
+				{
+					if (zombieActor->HasExpired())
+					{
+						continue;
+					}
+					++zombieCount;
+					int distance =
+						std::abs(policePosition.x - actor->GetPosition().x) +
+						std::abs(policePosition.y - actor->GetPosition().y);
+
+					if (distance < nearestDistance)
+					{
+						nearestDistance = distance;
+						nearestActor = actor;
+					}
+				}
+			}
+
+			if (nearestActor != nullptr)
+			{
+				std::shared_ptr<Zombie> zombie;
+
+				for (auto& currentZombie : zombies)
+				{
+					if (currentZombie.get() == nearestActor)
+					{
+						zombie = currentZombie;
+						break;
+					}
+				}
+
+				if (zombie == nullptr)
+				{
+					continue;
+				}
+
+				police->SetTargetZombie(zombie);
+
+				Vector2 zombiePosition = zombie->GetPosition();
+				police->SetTarget(zombiePosition, actorPositionVec);
 			}
 		}
 	}
@@ -562,14 +700,14 @@ bool GameLevel::IsCitizenAt(
     const Craft::Vector2& position,
     const Citizen* except)
 {
-	for (auto citizen : citizens)
+	for (auto zombie : citizens)
 	{	
-		if (citizen.get() == except)
+		if (zombie.get() == except)
 		{
 			continue;
 		}
 
-		if (citizen->GetPosition() == position)
+		if (zombie->GetPosition() == position)
 		{
 			return true;
 		}
