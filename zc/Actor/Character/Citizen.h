@@ -4,7 +4,7 @@
 #include <vector>
 
 class GameLevel;
-
+class Gimmick_Exit;
 class Citizen : public Craft::Actor
 {
 	TYPE_DECLARATIONS(Citizen, Actor);
@@ -15,6 +15,10 @@ public:
 	void SetTarget(const Craft::Vector2& target,
 		const std::vector<std::vector<int>>& grid);
 	void SetGameLevel(GameLevel* level);
+	bool HasPath() const;
+	void ClearPath();
+	void SetTargetActor(const std::shared_ptr<Gimmick_Exit>& actor);
+	bool HasTargetGimmick_Exit() const;
 private:
 	// 이벤트 함수 오버라이드.
 	virtual void Tick(float deltaTime) override;
@@ -31,5 +35,6 @@ private:
 	std::vector<Craft::Vector2> path;
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
+	std::weak_ptr<Gimmick_Exit> targetExitGimmick;
 };
 

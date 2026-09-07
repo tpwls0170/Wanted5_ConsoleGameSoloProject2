@@ -8,6 +8,7 @@
 class Citizen;
 class Zombie;
 class PoliceActor;
+class Gimmick_Exit;
 class GameLevel : public Craft::Level
 {
 	struct GameSetting
@@ -57,6 +58,7 @@ private:
 	void SelectActor();
 	void BuildActor();
 	std::wstring GetBuildTypeName(BuildType type);
+	void UpdateCitizenAI();
 	void UpdateZombieAI();
 	void UpdatePoliceAI();
 	void RemoveDestroyedCitizens();
@@ -69,14 +71,16 @@ private:
 	std::vector<std::shared_ptr<Citizen>> citizens;
 	std::vector<std::shared_ptr<Zombie>> zombies;
 	std::vector<std::shared_ptr<PoliceActor>> polices;
+	std::vector<std::shared_ptr<Gimmick_Exit>> gimmickExits;
 	Craft::Vector2 mousePosition = Craft::Vector2::Zero;
 	BuildType selectBuildType = BuildType::None;
+	ButtonUI startButton;
 	ButtonUI exitButton;
 	ButtonUI wallButton;
 	ButtonUI policeButton;
 
 	std::unique_ptr<Craft::QuadTree> quadTree;
-
+	bool gameStart = false;
 	int zombieCount = 0;
 	int citizenCount = 0;
 	int policeCount = 0;

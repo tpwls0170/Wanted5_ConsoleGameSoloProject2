@@ -52,7 +52,17 @@ void GameLevel::Tick(float deltaTime)
 			BuildActor();
 		}
 	}
+
+	if (Input::Get().GetKeyDown(VK_SPACE))
+	{
+		gameStart = true;
+	}
+	
+	if (gameStart == false)
+		return;
+
 	RemoveDestroyedCitizens();
+	UpdateCitizenAI();
 	UpdateZombieAI();
 	UpdatePoliceAI();
 }
@@ -240,6 +250,13 @@ void GameLevel::DrawUI()
 		Craft::Vector2(uiX, uiY + 2),
 		Craft::Color::White, 2
 	);
+
+	Craft::Renderer::Get().Submit(
+		L"Start▶",
+		Craft::Vector2(uiX + 25, uiY + 2),
+		Craft::Color::White, 2
+	);
+
 	Craft::Renderer::Get().Submit(
 		L"===================================================================================",
 		Craft::Vector2(0, uiY + 4),
@@ -367,13 +384,14 @@ void GameLevel::BuildActor()
 				actorPositionVec[mousePosition.y][mousePosition.x] = 2;
 				Vector2 gimmick_exitPosition = { mousePosition.x,mousePosition.y };
 				exitPositions.push_back(gimmick_exitPosition);
-				SpawnActor<Gimmick_Exit>(gimmick_exitPosition);
+				auto gimmickExit = SpawnActor<Gimmick_Exit>(gimmick_exitPosition);
+				gimmickExits.emplace_back(gimmickExit);
 				shelterCount++;
 
-				for (auto citizen : citizens)
-				{
-					citizen->SetTarget(exitPositions[0], actorPositionVec);
-				}
+				//for (auto citizen : citizens)
+				//{
+				//	citizen->SetTarget(exitPositions[0], actorPositionVec);
+				//}
 			}
 		}
 			break;
@@ -452,6 +470,90 @@ void GameLevel::UpdateQuadTree(Craft::Actor* actor)
 	quadTree->Update(actor);
 }
 
+void GameLevel::UpdateCitizenAI()
+{
+	if (!citizens.empty())
+	{
+		for (auto citizen : citizens)
+		{
+			//if (!citizen->HasTargetGimmick_Exit())
+			//{
+			//	citizen->ClearPath();
+			//}
+
+			if (citizen->HasPath())
+			{
+				continue;
+			}
+
+			Vector2 citizenPosition = citizen->GetPosition();
+
+			Rect searchArea{
+				citizenPosition.x - 5,
+				citizenPosition.y - 5,
+				50,
+				50
+			};
+
+			std::vector<Actor*> nearbyActors =
+				quadTree->Query(searchArea);
+
+			Actor* nearestActor = nullptr;
+			int nearestDistance = (std::numeric_limits<int>::max)();
+			for (Actor* actor : nearbyActors)
+			{
+				//if (actor == citizen.get())
+				//{
+				//	continue;
+				//}
+
+				Gimmick_Exit* gimmick_ExitActor = dynamic_cast<Gimmick_Exit*>(actor);
+
+				if (gimmick_ExitActor != nullptr)
+				{
+					if (gimmick_ExitActor->HasExpired())
+					{
+						continue;
+					}
+
+					int distance =
+						std::abs(citizenPosition.x - actor->GetPosition().x) +
+						std::abs(citizenPosition.y - actor->GetPosition().y);
+
+					if (distance < nearestDistance)
+					{
+						nearestDistance = distance;
+						nearestActor = actor;
+					}
+				}
+			}
+
+			if (nearestActor != nullptr)
+			{
+				std::shared_ptr<Gimmick_Exit> gimmickExit;
+
+				for (auto& currentgimmickExit : gimmickExits)
+				{
+					if (currentgimmickExit.get() == nearestActor)
+					{
+						gimmickExit = currentgimmickExit;
+						break;
+					}
+				}
+
+				if (gimmickExit == nullptr)
+				{
+					continue;
+				}
+
+				citizen->SetTargetActor(gimmickExit);
+
+				Vector2 gimmickExitPosition = gimmickExit->GetPosition();
+				citizen->SetTarget(gimmickExitPosition, actorPositionVec);
+			}
+		}
+	}
+}
 
 void GameLevel::UpdateZombieAI()
 {
@@ -517,10 +619,6 @@ void GameLevel::UpdateZombieAI()
 						polieNearesDistance = distance;
 						nearestPolice = actor;
 					}
-				}
-				else if (dynamic_cast<Zombie*>(actor) != nullptr)
-				{
-					++zombieCount;
 				}
 			}
 

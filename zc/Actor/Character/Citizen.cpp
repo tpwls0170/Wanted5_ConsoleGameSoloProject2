@@ -86,3 +86,31 @@ void Citizen::SetGameLevel(GameLevel* level)
 {
     gameLevel = level;
 }
+
+bool Citizen::HasPath() const
+{
+    return !path.empty() && currentPathIndex < path.size();
+}
+
+void Citizen::ClearPath()
+{
+    path.clear();
+    currentPathIndex = 0;
+}
+
+void Citizen::SetTargetActor(const std::shared_ptr<Gimmick_Exit>&actor)
+{
+    targetExitGimmick = actor;
+}
+
+bool Citizen::HasTargetGimmick_Exit() const
+{
+    auto gimmick_exit = targetExitGimmick.lock();
+
+    if (!gimmick_exit)
+    {
+        return false;
+    }
+
+    return !targetExitGimmick.expired();
+}
