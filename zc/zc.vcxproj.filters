@@ -36,9 +36,6 @@
     <ClCompile Include="Actor\Gimmick\Gimmick_Exit.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Actor\Camera\Camera.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Algorithm\Astar.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -75,9 +72,6 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Actor\Gimmick\Gimmick_Exit.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Actor\Camera\Camera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Algorithm\Astar.h">

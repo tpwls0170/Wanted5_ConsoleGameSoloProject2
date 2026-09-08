@@ -18,8 +18,8 @@ public:
 	bool HasTargetZombie() const;
 private:
 	virtual void Tick(float deltaTime) override;
-	virtual void OnCollision(const std::shared_ptr<Actor>& other) override;
 	int GetDistance(const Craft::Vector2 target) const;
+	void DebugDraw();
 private:
 	Craft::Astar astar;
 	float moveSpeed = 0.0f;
@@ -30,5 +30,8 @@ private:
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
 	std::weak_ptr<Zombie> targetZombie;
+
+	float debugElapsedTime = 0.0f;
+	bool showDebugPath = false;
 };
 

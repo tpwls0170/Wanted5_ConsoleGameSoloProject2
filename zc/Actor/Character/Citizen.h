@@ -25,7 +25,7 @@ private:
 
 	// 충돌 이벤트 함수 오버라이드.
 	virtual void OnCollision(const std::shared_ptr<Actor>& other) override;
-	virtual void Draw() override;
+	virtual void DebugDraw();
 
 private:
 	Craft::Astar astar;
@@ -36,5 +36,8 @@ private:
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
 	std::weak_ptr<Gimmick_Exit> targetExitGimmick;
+
+	float debugElapsedTime = 0.0f;
+	bool showDebugPath = false;
 };
 

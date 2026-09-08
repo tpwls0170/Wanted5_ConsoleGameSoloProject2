@@ -25,6 +25,10 @@ private:
 
 	// 충돌 이벤트 함수 오버라이드.
 	virtual void OnCollision(const std::shared_ptr<Actor>& other) override;
+	Craft::Vector2 CalculateCrowdDirection();
+	Craft::Vector2 CalculateAlignment();
+	Craft::Vector2 CalculateCohesion();
+	void DebugDraw();
 private:
 	Craft::Astar astar;
 	float moveSpeed = 0.0f;
@@ -34,5 +38,8 @@ private:
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
 	std::weak_ptr<Actor> targetActor;
+
+	float debugElapsedTime = 0.0f;
+	bool showDebugPath = false;
 };
 

@@ -7,7 +7,7 @@ public:
 	TitleLevel();
 private:
 	virtual void Tick(float deltaTime) override;
-	void Draw();
+	void DebugDraw();
 
 private:
 	std::vector<std::wstring> title;

@@ -45,6 +45,7 @@ public:
 		const Citizen* except);
 	void CreateZombie(const Craft::Vector2 position, bool isInfection);
 	void UpdateQuadTree(Craft::Actor* actor);
+	inline Craft::QuadTree& GetQuadTree() { return *quadTree; }
 private:
 	virtual void OnInitialized();
 	virtual void Tick(float deltaTime) override;
@@ -62,6 +63,8 @@ private:
 	void UpdatePoliceAI();
 	void RemoveDestroyedCitizens();
 	void EndConditionGame();
+	void DebugQuadTreeDraw();
+
 private:
 	GameSetting gameSetting;
 	int currentStage = 1;

@@ -7,6 +7,14 @@
 #include <Windows.h>
 namespace Craft
 {
+	struct DebugRect
+	{
+		Vector2 leftTop;
+		Vector2 rightTop;
+		Vector2 leftBottom;
+		Vector2 rightBottom;
+	};
+
 	struct Rect
 	{
 		float x;
@@ -192,6 +200,31 @@ namespace Craft
 
 				return false;
 			}
+
+			void GetDebugRects(std::vector<DebugRect>& debugRects)
+			{
+				Craft::Vector2 leftTop = { static_cast<int>(Bounds.x), static_cast<int>(Bounds.y) };
+				Craft::Vector2 rightTop = { static_cast<int>(Bounds.x + Bounds.width), static_cast<int>(Bounds.y) };
+				Craft::Vector2 leftBottom = { static_cast<int>(Bounds.x), static_cast<int>(Bounds.y + Bounds.height) };
+				Craft::Vector2 rightBottom = { static_cast<int>(Bounds.x + Bounds.width),
+					static_cast<int>(Bounds.y + Bounds.height) };
+
+				DebugRect debugRect;
+				debugRect.leftTop = leftTop;
+				debugRect.leftBottom = leftBottom;
+				debugRect.rightTop = rightTop;
+				debugRect.rightBottom = rightBottom;
+
+				debugRects.emplace_back(debugRect);
+
+				for (int i = 0; i < ChildCount; ++i)
+				{
+					if (childrens[i] != nullptr)
+					{
+						childrens[i]->GetDebugRects(debugRects);
+					}
+				}
+			}
 		};
 
 	public:
@@ -200,6 +233,9 @@ namespace Craft
 		std::vector<Actor*> Query(const Rect& area);
 		bool Update(Actor* actor);
 		bool Remove(Actor* actor);
+		std::vector<DebugRect> DebugDraw();
+
+		std::vector<Actor*> QueryRange(const Vector2& center, float range);
 	private:
 		std::unique_ptr<Node> root;
 	};

@@ -15,6 +15,18 @@ void Citizen::Tick(float deltaTime)
 
     elapsedTime += deltaTime;
 
+    debugElapsedTime += deltaTime;
+    if (debugElapsedTime >= 5.0f)
+    {
+        debugElapsedTime = 0.0f;
+        showDebugPath = !showDebugPath;
+    }
+
+    if (showDebugPath)
+    {
+        DebugDraw();
+    }
+
     if (elapsedTime < 1.0f)
         return;
 
@@ -33,7 +45,7 @@ void Citizen::Tick(float deltaTime)
     {
         return;
     }
-
+    
     SetPosition(nextPosition);
 
     if (gameLevel != nullptr)
@@ -50,21 +62,17 @@ void Citizen::OnCollision(
     super::OnCollision(other);
 }
 
-void Citizen::Draw()
+void Citizen::DebugDraw()
 {
-    super::Draw();
-    //a*경로 디버그 모드 나중에 수정하기
-  /* const auto& debugNodes = astar.GetDebugNodes();
-
-    for (const auto& node : debugNodes)
+    for (int i = currentPathIndex; i < path.size(); ++i)
     {
         Renderer::Get().Submit(
             L".",
-            node.position,
-            Color::Green,
+            path[i],
+            Color::BrightWhite,
             0
         );
-    }*/
+    }
 }
 
 void Citizen::SetTarget(

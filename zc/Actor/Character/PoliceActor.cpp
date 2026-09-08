@@ -2,6 +2,7 @@
 #include <Level/GameLevel.h>
 #include <Actor/PoliceBullet.h>
 #include <Actor/Enemy/Zombie.h>
+#include <Render/Renderer.h>
 
 using namespace Craft;
 PoliceActor::PoliceActor(const Craft::Vector2& position)
@@ -13,6 +14,18 @@ void PoliceActor::Tick(float deltaTime)
 {
 	super::Tick(deltaTime);
     elapsedTime += deltaTime;
+
+    debugElapsedTime += deltaTime;
+    if (debugElapsedTime >= 5.0f)
+    {
+        debugElapsedTime = 0.0f;
+        showDebugPath = !showDebugPath;
+    }
+
+    if (showDebugPath)
+    {
+        DebugDraw();
+    }
 
     if (elapsedTime < 0.8f)
         return;
@@ -58,14 +71,22 @@ void PoliceActor::Tick(float deltaTime)
     ++currentPathIndex;
 }
 
-void PoliceActor::OnCollision(const std::shared_ptr<Actor>&other)
-{
-
-}
-
 int PoliceActor::GetDistance(const Craft::Vector2 target) const
 {
     return std::abs(GetPosition().x - target.x) + std::abs(GetPosition().y - target.y);
+}
+
+void PoliceActor::DebugDraw()
+{
+    for (int i = currentPathIndex; i < path.size(); ++i)
+    {
+        Renderer::Get().Submit(
+            L".",
+            path[i],
+            Color::Blue,
+            0
+        );
+    }
 }
 
 void PoliceActor::SetGameLevel(GameLevel* level)

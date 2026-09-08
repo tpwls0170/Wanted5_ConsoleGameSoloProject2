@@ -99,7 +99,6 @@
     <ClCompile Include="Actor\Enemy\Zombie.cpp" />
     <ClCompile Include="Actor\Gimmick\Gimmick_Exit.cpp" />
     <ClCompile Include="Actor\Character\Citizen.cpp" />
-    <ClCompile Include="Actor\Camera\Camera.cpp" />
     <ClCompile Include="Actor\Gimmick\Gimmick_Wall.cpp" />
     <ClCompile Include="Actor\PoliceBullet.cpp" />
     <ClCompile Include="Algorithm\Astar.cpp" />
@@ -115,7 +114,6 @@
     <ClInclude Include="Actor\Enemy\Zombie.h" />
     <ClInclude Include="Actor\Gimmick\Gimmick_Exit.h" />
     <ClInclude Include="Actor\Character\Citizen.h" />
-    <ClInclude Include="Actor\Camera\Camera.h" />
     <ClInclude Include="Actor\Gimmick\Gimmick_Wall.h" />
     <ClInclude Include="Actor\PoliceBullet.h" />
     <ClInclude Include="Algorithm\Astar.h" />

@@ -57,7 +57,7 @@ TitleLevel::TitleLevel()
 void TitleLevel::Tick(float deltaTime)
 {
     Level::Tick(deltaTime);
-	Draw();
+	DebugDraw();
 
 	if (Input::Get().GetKeyDown(VK_ESCAPE))
 	{
@@ -71,7 +71,7 @@ void TitleLevel::Tick(float deltaTime)
 	}
 }
 
-void TitleLevel::Draw()
+void TitleLevel::DebugDraw()
 {
     const int screenWidth =
         static_cast<int>(Engine::Get().GetWidth());
@@ -97,7 +97,8 @@ void TitleLevel::Draw()
 
         Renderer::Get().Submit(
             title[y],
-            Vector2(startX, startY + y)
+            Vector2(startX, startY + y),
+            Craft::Color::Green
         );
     }
 }

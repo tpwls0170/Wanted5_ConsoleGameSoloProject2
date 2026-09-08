@@ -65,7 +65,8 @@ void GameLevel::Tick(float deltaTime)
 	UpdateCitizenAI();
 	UpdateZombieAI();
 	UpdatePoliceAI();
-	EndConditionGame();
+	//EndConditionGame();
+	DebugQuadTreeDraw();
 }
 
 void GameLevel::initCreateMap()
@@ -202,7 +203,7 @@ void GameLevel::DrawUI()
 	const int buttonHight = 3;
 
 	Craft::Renderer::Get().Submit(
-		L"===================================================================================",
+		L"===================================================================================================",
 		Craft::Vector2(0, uiY),
 		Craft::Color::White
 	);
@@ -238,13 +239,13 @@ void GameLevel::DrawUI()
 	);
 
 	Craft::Renderer::Get().Submit(
-		L"Start▶",
+		L"Start▶ : SPACE Key",
 		Craft::Vector2(uiX + 25, uiY + 2),
 		Craft::Color::White, 2
 	);
 
 	Craft::Renderer::Get().Submit(
-		L"===================================================================================",
+		L"===================================================================================================",
 		Craft::Vector2(0, uiY + 4),
 		Craft::Color::White
 	);
@@ -550,8 +551,8 @@ void GameLevel::UpdateZombieAI()
 			Vector2 zombiePosition = zombie->GetPosition();
 
 			Rect searchArea{
-				zombiePosition.x - 5,
-				zombiePosition.y - 5,
+				static_cast<int>(zombiePosition.x - 5),
+				static_cast<int>(zombiePosition.y - 5),
 				30,
 				30
 			};
@@ -781,6 +782,60 @@ void GameLevel::EndConditionGame()
 	{
 		GameLevelManager& gameLevelManager = dynamic_cast<GameLevelManager&>(Engine::Get());
 		gameLevelManager.ToggleMenu(State::GamePlay, State::GameOver);
+	}
+}
+
+void GameLevel::DebugQuadTreeDraw()
+{
+	std::vector<DebugRect> debugRectVec = quadTree->DebugDraw();
+
+	for (int i = 0; i < debugRectVec.size(); ++i)
+	{
+		// 위쪽
+		for (int j = debugRectVec[i].leftTop.x; j <= debugRectVec[i].rightTop.x; ++j)
+		{
+			Renderer::Get().Submit(
+				L"-",
+				Vector2(j, debugRectVec[i].leftTop.y),
+				Color::White
+			);
+		}
+
+		// 아래쪽
+		for (int ix = debugRectVec[i].leftBottom.x; ix <= debugRectVec[i].rightBottom.x; ++ix)
+		{
+			Renderer::Get().Submit(
+				L"-",
+				Vector2(ix, debugRectVec[i].leftBottom.y),
+				Color::White
+			);
+		}
+
+		// 왼쪽
+		for (int iy = debugRectVec[i].leftTop.y; iy < debugRectVec[i].leftBottom.y; ++iy)
+		{
+			Renderer::Get().Submit(
+				L"|",
+				Vector2(debugRectVec[i].leftTop.x, iy),
+				Color::White
+			);
+		}
+
+		// 오른쪽
+		for (int iz = debugRectVec[i].rightTop.y; iz < debugRectVec[i].rightBottom.y; ++iz)
+		{
+			Renderer::Get().Submit(
+				L"|",
+				Vector2(debugRectVec[i].rightTop.x, iz),
+				Color::White
+			);
+		}
+
+		// 모서리
+		Renderer::Get().Submit(L"+", debugRectVec[i].leftTop, Color::White);
+		Renderer::Get().Submit(L"+", debugRectVec[i].rightTop, Color::White);
+		Renderer::Get().Submit(L"+", debugRectVec[i].leftBottom, Color::White);
+		Renderer::Get().Submit(L"+", debugRectVec[i].rightBottom, Color::White);
 	}
 }
 

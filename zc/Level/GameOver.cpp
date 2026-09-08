@@ -15,7 +15,7 @@ GameOver::GameOver()
 	};
 }
 
-void GameOver::Draw()
+void GameOver::DebugDraw()
 {
     const int screenWidth =
         static_cast<int>(Engine::Get().GetWidth());
@@ -41,7 +41,8 @@ void GameOver::Draw()
 
         Renderer::Get().Submit(
             title[y],
-            Vector2(startX, startY + y)
+            Vector2(startX, startY + y),
+            Craft::Color::Red
         );
     }
 }
