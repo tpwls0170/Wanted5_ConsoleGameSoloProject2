@@ -51,7 +51,6 @@ private:
 
 	void initCreateMap();
 	void LoadGameLevelSetting();
-	void LoadGameLevelMap();
 	void initCreateActor();
 	void DrawUI();
 	void DrawButtonUI(const ButtonUI& button);
@@ -62,6 +61,7 @@ private:
 	void UpdateZombieAI();
 	void UpdatePoliceAI();
 	void RemoveDestroyedCitizens();
+	void EndConditionGame();
 private:
 	GameSetting gameSetting;
 	int currentStage = 1;

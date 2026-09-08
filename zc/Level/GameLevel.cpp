@@ -10,8 +10,8 @@
 #include <Render/Renderer.h>
 #include <limits>
 #include <algorithm>
+#include <Game/GameLevelManager.h>
 
-#include <iostream>
 using namespace Craft;
 void GameLevel::OnInitialized()
 {
@@ -65,11 +65,11 @@ void GameLevel::Tick(float deltaTime)
 	UpdateCitizenAI();
 	UpdateZombieAI();
 	UpdatePoliceAI();
+	EndConditionGame();
 }
 
 void GameLevel::initCreateMap()
 {
-	LoadGameLevelMap();
 	initCreateActor();
 }
 
@@ -153,20 +153,6 @@ void GameLevel::LoadGameLevelSetting()
 	// 파일 닫기.
 	fclose(file);
 	file = nullptr;
-}
-
-void GameLevel::LoadGameLevelMap()
-{
-	//// 최종 경로 조립.
-	//std::string path = std::string("../Assets/") + "Stage" + std::to_string(currentStage) + "_Map";
-	//// 파일 열기 (C-Style).
-	//FILE* file = nullptr;
-	//fopen_s(&file, path.c_str(), "rt");
-	//if (!file)
-	//{
-	//	assert(false && "failed to open a sokoban stage file.");
-	//	return;
-	//}
 }
 
 void GameLevel::initCreateActor()
@@ -387,11 +373,7 @@ void GameLevel::BuildActor()
 				auto gimmickExit = SpawnActor<Gimmick_Exit>(gimmick_exitPosition);
 				gimmickExits.emplace_back(gimmickExit);
 				shelterCount++;
-
-				//for (auto citizen : citizens)
-				//{
-				//	citizen->SetTarget(exitPositions[0], actorPositionVec);
-				//}
+				quadTree->Insert(gimmickExit.get());
 			}
 		}
 			break;
@@ -476,10 +458,10 @@ void GameLevel::UpdateCitizenAI()
 	{
 		for (auto citizen : citizens)
 		{
-			//if (!citizen->HasTargetGimmick_Exit())
-			//{
-			//	citizen->ClearPath();
-			//}
+			if (!citizen->HasTargetGimmick_Exit())
+			{
+				citizen->ClearPath();
+			}
 
 			if (citizen->HasPath())
 			{
@@ -489,10 +471,10 @@ void GameLevel::UpdateCitizenAI()
 			Vector2 citizenPosition = citizen->GetPosition();
 
 			Rect searchArea{
-				citizenPosition.x - 5,
-				citizenPosition.y - 5,
-				50,
-				50
+				0,
+				0,
+				gameSetting.stageWidth,
+				gameSetting.stageHight
 			};
 
 			std::vector<Actor*> nearbyActors =
@@ -502,10 +484,10 @@ void GameLevel::UpdateCitizenAI()
 			int nearestDistance = (std::numeric_limits<int>::max)();
 			for (Actor* actor : nearbyActors)
 			{
-				//if (actor == citizen.get())
-				//{
-				//	continue;
-				//}
+				if (actor == citizen.get())
+				{
+					continue;
+				}
 
 				Gimmick_Exit* gimmick_ExitActor = dynamic_cast<Gimmick_Exit*>(actor);
 
@@ -545,7 +527,6 @@ void GameLevel::UpdateCitizenAI()
 				{
 					continue;
 				}
-
 				citizen->SetTargetActor(gimmickExit);
 
 				Vector2 gimmickExitPosition = gimmickExit->GetPosition();
@@ -762,7 +743,7 @@ void GameLevel::UpdatePoliceAI()
 						break;
 					}
 				}
-
+				
 				if (zombie == nullptr)
 				{
 					continue;
@@ -791,6 +772,15 @@ void GameLevel::RemoveDestroyedCitizens()
 		{
 			++it;
 		}
+	}
+}
+
+void GameLevel::EndConditionGame()
+{
+	if (citizens.empty())
+	{
+		GameLevelManager& gameLevelManager = dynamic_cast<GameLevelManager&>(Engine::Get());
+		gameLevelManager.ToggleMenu(State::GamePlay, State::GameOver);
 	}
 }
 

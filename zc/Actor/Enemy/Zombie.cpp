@@ -3,7 +3,6 @@
 #include <Actor/Character/PoliceActor.h>
 #include <Level/GameLevel.h>
 
-#include <iostream>
 using namespace Craft;
 Zombie::Zombie(const Craft::Vector2& position)
 	: Actor(L"Z",position,Craft::Color::Red)

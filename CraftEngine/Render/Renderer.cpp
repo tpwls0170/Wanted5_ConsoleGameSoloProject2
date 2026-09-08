@@ -144,8 +144,6 @@ namespace Craft
 			if (command.position.y < 0
 				|| command.position.y >= screenSize.y)
 			{
-				std::cout << "Position Y : " << command.position.y << '\n';
-				std::cout << "Screen Y : " << screenSize.y << '\n';
 				continue;
 			}
 

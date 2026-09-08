@@ -1,12 +1,11 @@
 ﻿#pragma once
 #include <Level/Level.h>
 
-class TitleLevel : public Craft::Level
+class GameOver : public Craft::Level
 {
 public:
-	TitleLevel();
+	GameOver();
 private:
-	virtual void Tick(float deltaTime) override;
 	void Draw();
 
 private:

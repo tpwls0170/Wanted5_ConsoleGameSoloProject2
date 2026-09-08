@@ -79,7 +79,7 @@ void Citizen::SetTarget(
         grid
     );
 
-    currentPathIndex = 0;
+    currentPathIndex = 1;
 }
 
 void Citizen::SetGameLevel(GameLevel* level)

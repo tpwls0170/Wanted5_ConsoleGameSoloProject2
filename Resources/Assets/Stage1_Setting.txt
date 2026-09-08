@@ -1,7 +1,7 @@
 stageWidth = 150
 stageHight = 35
 zombieMaxCount = 10
-citizenMaxCount = 20
+citizenMaxCount = 2
 policeMaxCount = 1
 soldierMaxCount = 0
 shelterMaxCount = 1

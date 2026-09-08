@@ -105,6 +105,7 @@
     <ClCompile Include="Algorithm\Astar.cpp" />
     <ClCompile Include="Algorithm\QuadTree.cpp" />
     <ClCompile Include="Game\GameLevelManager.cpp" />
+    <ClCompile Include="Level\GameOver.cpp" />
     <ClCompile Include="Level\GameLevel.cpp" />
     <ClCompile Include="Level\TitleLevel.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -120,6 +121,7 @@
     <ClInclude Include="Algorithm\Astar.h" />
     <ClInclude Include="Algorithm\QuadTree.h" />
     <ClInclude Include="Game\GameLevelManager.h" />
+    <ClInclude Include="Level\GameOver.h" />
     <ClInclude Include="Level\GameLevel.h" />
     <ClInclude Include="Level\TitleLevel.h" />
   </ItemGroup>

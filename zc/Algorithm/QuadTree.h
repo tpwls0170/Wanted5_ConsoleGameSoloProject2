@@ -5,7 +5,6 @@
 #include <Actor/Actor.h>
 
 #include <Windows.h>
-#include <iostream>
 namespace Craft
 {
 	struct Rect
