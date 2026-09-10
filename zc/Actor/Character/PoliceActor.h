@@ -22,14 +22,17 @@ private:
 	void DebugDraw();
 private:
 	Craft::Astar astar;
-	float moveSpeed = 0.0f;
-	float elapsedTime = 0.0f;
+	float moveSpeed = 2.0f;
 	int currentPathIndex = 1;
 	int range = 5;
 	std::vector<Craft::Vector2> path;
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
 	std::weak_ptr<Zombie> targetZombie;
+	float shootCooldown = 2.0f;
+	float shootElapsedTime = 0.0f;
+	float positionX = 0.0f;
+	float positionY = 0.0f;
 
 	float debugElapsedTime = 0.0f;
 	bool showDebugPath = false;

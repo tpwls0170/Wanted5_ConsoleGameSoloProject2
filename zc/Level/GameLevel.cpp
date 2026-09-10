@@ -57,7 +57,12 @@ void GameLevel::Tick(float deltaTime)
 	{
 		gameStart = true;
 	}
-	
+
+	if (Input::Get().GetKeyDown('D'))
+	{
+		debugMode = !debugMode;
+	}
+
 	if (gameStart == false)
 		return;
 
@@ -65,8 +70,11 @@ void GameLevel::Tick(float deltaTime)
 	UpdateCitizenAI();
 	UpdateZombieAI();
 	UpdatePoliceAI();
-	//EndConditionGame();
-	DebugQuadTreeDraw();
+	EndConditionGame();
+	if (debugMode)
+	{
+		DebugQuadTreeDraw();
+	}
 }
 
 void GameLevel::initCreateMap()
@@ -589,9 +597,15 @@ void GameLevel::UpdateZombieAI()
 						nearestCitizen = actor;
 					}
 				}
-				else if (dynamic_cast<PoliceActor*>(actor) != nullptr)
+				else if (PoliceActor* policeActor = dynamic_cast<PoliceActor*>(actor))
 				{
+					if (policeActor->HasExpired())
+					{
+						continue;
+					}
+
 					++policeCount;
+
 					int distance =
 						std::abs(zombiePosition.x - actor->GetPosition().x) +
 						std::abs(zombiePosition.y - actor->GetPosition().y);
@@ -609,13 +623,46 @@ void GameLevel::UpdateZombieAI()
 				if (nearestPolice != nullptr)
 				{
 					auto target = zombie->GetTargetActor().lock();
-					if (auto police = dynamic_cast<PoliceActor*>(target.get()))
+
+					// 현재 경찰을 추적 중이고
+					// 경찰이 아직 존재한다면 기존 경로 유지
+					if (nearestPolice != nullptr)
 					{
-						continue;
-					}
-					else if (auto citizen = dynamic_cast<Citizen*>(target.get()))
-					{
+						if (auto police = dynamic_cast<PoliceActor*>(target.get()))
+						{
+							if (!police->HasExpired())
+							{
+								continue;
+							}
+						}
+
+						// 경찰이 아니거나 죽은 경찰이면 새 목표 선택
 						zombie->ClearPath();
+						zombie->ClearTargetActor();
+						zombie->SetSurroundSlot(-1);
+					}
+					// 주변에 경찰은 없고 시민이 있다면
+					// 기존 경찰 경로를 버리고 시민을 찾는다.
+					else if (nearestCitizen != nullptr)
+					{
+						if (auto citizen = dynamic_cast<Citizen*>(target.get()))
+						{
+							if (!citizen->HasExpired())
+							{
+								continue;
+							}
+						}
+
+						zombie->ClearPath();
+						zombie->ClearTargetActor();
+						zombie->SetSurroundSlot(-1);
+					}
+					else
+					{
+						// 아무 목표도 없으면 기존 경로 제거
+						zombie->ClearPath();
+						zombie->ClearTargetActor();
+						zombie->SetSurroundSlot(-1);
 					}
 				}
 				else
@@ -641,9 +688,58 @@ void GameLevel::UpdateZombieAI()
 				}
 
 				zombie->SetTargetActor(police);
+				// 경찰을 목표로 하고 있는 다른 좀비들의 슬롯 확인
+				bool usedSlots[8] = {};
 
+				for (auto& otherZombie : zombies)
+				{
+					if (otherZombie.get() == zombie.get())
+						continue;
+
+					if (!otherZombie->HasTargetActor())
+						continue;
+
+					auto otherTarget =
+						otherZombie->GetTargetActor().lock();
+
+					if (otherTarget.get() != police.get())
+						continue;
+
+					int slot =
+						otherZombie->GetSurroundSlot();
+
+					if (slot >= 0 && slot < 8)
+					{
+						usedSlots[slot] = true;
+					}
+				}
+
+				// 슬롯이 아직 없다면 빈 슬롯 배정
+				if (zombie->GetSurroundSlot() == -1)
+				{
+					for (int slot = 0; slot < 8; ++slot)
+					{
+						if (!usedSlots[slot])
+						{
+							zombie->SetSurroundSlot(slot);
+							break;
+						}
+					}
+				}
+
+				Vector2 zombiePosition = zombie->GetPosition();
 				Vector2 policePosition = police->GetPosition();
-				zombie->SetTarget(policePosition, actorPositionVec);
+
+				int distance =
+					std::abs(zombiePosition.x - policePosition.x) +
+					std::abs(zombiePosition.y - policePosition.y);
+
+				Vector2 surroundPosition =
+					zombie->CalculateSurroundPosition();
+
+				zombie->SetTarget(
+					surroundPosition,
+					actorPositionVec);
 			}
 			else if (nearestCitizen != nullptr)
 			{
@@ -664,7 +760,7 @@ void GameLevel::UpdateZombieAI()
 				}
 
 				zombie->SetTargetActor(citizen);
-
+				zombie->SetSurroundSlot(-1);
 				Vector2 citizenPosition = citizen->GetPosition();
 				zombie->SetTarget(citizenPosition, actorPositionVec);
 			}

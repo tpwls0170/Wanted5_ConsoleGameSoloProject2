@@ -15,6 +15,11 @@ GameOver::GameOver()
 	};
 }
 
+void GameOver::Tick(float deltaTime)
+{
+    DebugDraw();
+}
+
 void GameOver::DebugDraw()
 {
     const int screenWidth =

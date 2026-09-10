@@ -46,6 +46,8 @@ public:
 	void CreateZombie(const Craft::Vector2 position, bool isInfection);
 	void UpdateQuadTree(Craft::Actor* actor);
 	inline Craft::QuadTree& GetQuadTree() { return *quadTree; }
+public:
+	bool debugMode = false;
 private:
 	virtual void OnInitialized();
 	virtual void Tick(float deltaTime) override;
@@ -84,6 +86,7 @@ private:
 
 	std::unique_ptr<Craft::QuadTree> quadTree;
 	bool gameStart = false;
+
 	int zombieCount = 0;
 	int citizenCount = 0;
 	int policeCount = 0;

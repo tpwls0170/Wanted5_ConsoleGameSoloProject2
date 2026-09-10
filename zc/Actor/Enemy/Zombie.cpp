@@ -7,61 +7,137 @@
 
 using namespace Craft;
 Zombie::Zombie(const Craft::Vector2& position)
-	: Actor(L"Z",position,Craft::Color::Red)
+    : Actor(L"Z", position, Craft::Color::Red)
 {
     sortingOrder = 1;
+    positionX = static_cast<float>(position.x);
+    positionY = static_cast<float>(position.y);
 }
 
 void Zombie::Tick(float deltaTime)
 {
-    super::Tick(deltaTime);
+    auto target = targetActor.lock();
 
-    elapsedTime += deltaTime;
+    if (target != nullptr && !target->HasExpired())
+    {
+        Vector2 zombiePosition = GetPosition();
+        Vector2 targetPosition = target->GetPosition();
 
+        int distance =
+            std::abs(zombiePosition.x - targetPosition.x) +
+            std::abs(zombiePosition.y - targetPosition.y);
+
+        if (target->IsTypeOf<Citizen>() && distance <= 2)
+        {
+            OnCollision(target);
+            return;
+        }
+
+        if (target->IsTypeOf<PoliceActor>() && distance <= 1)
+        {
+            OnCollision(target);
+            return;
+        }
+    }
+
+    // 디버그 경로 표시
     debugElapsedTime += deltaTime;
+
     if (debugElapsedTime >= 5.0f)
     {
         debugElapsedTime = 0.0f;
         showDebugPath = !showDebugPath;
     }
 
-    if (showDebugPath)
+    if (showDebugPath && gameLevel->debugMode)
     {
         DebugDraw();
     }
 
-    if (elapsedTime < 1.0f)
-        return;
-
-    elapsedTime = 0;
     if (path.empty())
-    {
         return;
-    }
 
     if (currentPathIndex >= path.size())
-    {
         return;
-    }
 
     Vector2 nextPosition = path[currentPathIndex];
 
-    Vector2 crowdDirection = CalculateCrowdDirection();
+    // 현재 위치 → 다음 경로 지점
+    float dx =
+        static_cast<float>(nextPosition.x) - positionX;
 
-    nextPosition.x += crowdDirection.x;
-    nextPosition.y += crowdDirection.y;
+    float dy =
+        static_cast<float>(nextPosition.y) - positionY;
 
-    SetPosition(nextPosition);
+    // Boids
+    CrowdVelocity boids =
+        CalculateBoidsSteering();
+
+    dx += boids.x * 0.1f;
+    dy += boids.y * 0.1f;
+
+    float distance =
+        std::sqrt(dx * dx + dy * dy);
+
+    if (distance <= 0.0001f)
+    {
+        positionX = static_cast<float>(nextPosition.x);
+        positionY = static_cast<float>(nextPosition.y);
+
+        SetPosition(nextPosition);
+
+        if (gameLevel != nullptr)
+        {
+            gameLevel->UpdateQuadTree(this);
+        }
+
+        ++currentPathIndex;
+        return;
+    }
+
+    float moveDistance = moveSpeed * deltaTime;
+
+    // 이번 프레임에 목표까지 도착
+    if (moveDistance >= distance)
+    {
+        positionX = static_cast<float>(nextPosition.x);
+        positionY = static_cast<float>(nextPosition.y);
+
+        SetPosition(nextPosition);
+
+        if (gameLevel != nullptr)
+        {
+            gameLevel->UpdateQuadTree(this);
+        }
+
+        ++currentPathIndex;
+        return;
+    }
+
+    // 목표 방향으로 조금씩 이동
+    float directionX = dx / distance;
+    float directionY = dy / distance;
+
+    velocity.x = directionX;
+    velocity.y = directionY;
+
+    positionX += directionX * moveDistance;
+    positionY += directionY * moveDistance;
+
+    SetPosition(
+        Craft::Vector2{
+            static_cast<int>(positionX),
+            static_cast<int>(positionY)
+        }
+    );
 
     if (gameLevel != nullptr)
     {
         gameLevel->UpdateQuadTree(this);
     }
-
-    ++currentPathIndex;
 }
 
-void Zombie::SetTarget(const Craft::Vector2& target, const std::vector<std::vector<int>>&grid)
+void Zombie::SetTarget(const Craft::Vector2& target, const std::vector<std::vector<int>>& grid)
 {
     this->target = target;
     std::vector<std::vector<int>> zombieGrid = grid;
@@ -86,39 +162,46 @@ void Zombie::SetTarget(const Craft::Vector2& target, const std::vector<std::vect
     currentPathIndex = 0;
 }
 
-void Zombie::OnCollision(const std::shared_ptr<Actor>&other)
+void Zombie::OnCollision(const std::shared_ptr<Actor>& other)
 {
     if (other == nullptr)
         return;
 
     if (other->IsTypeOf<Citizen>())
     {
-        // 여기까지 들어오는지 확인
+        if (gameLevel != nullptr)
+        {
+            gameLevel->CreateZombie(
+                other->GetPosition(),
+                true
+            );
+        }
     }
     else if (other->IsTypeOf<PoliceActor>())
     {
-        // 여기까지 들어오는지 확인
+        if (gameLevel != nullptr)
+        {
+            gameLevel->CreateZombie(
+                other->GetPosition(),
+                true
+            );
+        }
     }
     else
     {
         return;
     }
 
-    if (gameLevel != nullptr)
-    {
-        gameLevel->CreateZombie(
-            other->GetPosition(),
-            true
-        );
-    }
-
     ClearPath();
+    ClearTargetActor();
+    SetSurroundSlot(-1);
+
     other->Destroy();
 }
 
-Craft::Vector2 Zombie::CalculateCrowdDirection()
+Zombie::CrowdVelocity Zombie::CalculateSeparation()
 {
-    Vector2 separation{ 0, 0 };
+    CrowdVelocity separation{};
 
     if (gameLevel == nullptr)
         return separation;
@@ -126,205 +209,8 @@ Craft::Vector2 Zombie::CalculateCrowdDirection()
     auto nearbyActors =
         gameLevel->GetQuadTree().QueryRange(
             GetPosition(),
-            100.0f
+            3.0f
         );
-
-    for (Actor* actor : nearbyActors)
-    {
-        if (actor == nullptr)
-            continue;
-
-        if (actor == this)
-            continue;
-
-        Zombie* zombie =
-            dynamic_cast<Zombie*>(actor);
-
-        if (zombie == nullptr)
-            continue;
-
-        Vector2 direction =
-            GetPosition() - zombie->GetPosition();
-
-        float dx = static_cast<float>(direction.x);
-        float dy = static_cast<float>(direction.y);
-
-        float distance =
-            std::sqrt(dx * dx + dy * dy);
-
-        if (distance <= 0.0f)
-            continue;
-
-        if (distance < 50.0f)
-        {
-            int pushX = 0;
-            int pushY = 0;
-
-            if (direction.x > 0)
-                pushX = 1;
-            else if (direction.x < 0)
-                pushX = -1;
-
-            if (direction.y > 0)
-                pushY = 1;
-            else if (direction.y < 0)
-                pushY = -1;
-
-            separation.x =
-                separation.x + pushX;
-
-            separation.y =
-                separation.y + pushY;
-        }
-    }
-
-    if (separation.x > 1)
-        separation.x = 1;
-    else if (separation.x < -1)
-        separation.x = -1;
-
-    if (separation.y > 1)
-        separation.y = 1;
-    else if (separation.y < -1)
-        separation.y = -1;
-
-    return separation;
-
-}
-
-Craft::Vector2 Zombie::CalculateAlignment()
-{
-    Vector2 separation{ 0, 0 };
-
-    if (gameLevel == nullptr)
-        return separation;
-
-    auto nearbyActors =
-        gameLevel->GetQuadTree().QueryRange(
-            GetPosition(),
-            100.0f
-        );
-
-    for (Actor* actor : nearbyActors)
-    {
-        if (actor == nullptr)
-            continue;
-
-        if (actor == this)
-            continue;
-
-        Zombie* zombie =
-            dynamic_cast<Zombie*>(actor);
-
-        if (zombie == nullptr)
-            continue;
-
-        Vector2 direction =
-            GetPosition() - zombie->GetPosition();
-
-        float dx =
-            static_cast<float>(direction.x);
-
-        float dy =
-            static_cast<float>(direction.y);
-
-        float distance =
-            std::sqrt(dx * dx + dy * dy);
-
-        if (distance <= 0.0f)
-            continue;
-
-        if (distance < 50.0f)
-        {
-            int pushX = 0;
-            int pushY = 0;
-
-            if (direction.x > 0)
-                pushX = 1;
-            else if (direction.x < 0)
-                pushX = -1;
-
-            if (direction.y > 0)
-                pushY = 1;
-            else if (direction.y < 0)
-                pushY = -1;
-
-            separation.x =
-                separation.x + pushX;
-
-            separation.y =
-                separation.y + pushY;
-        }
-    }
-
-    // Separation 제한
-    if (separation.x > 1)
-        separation.x = 1;
-    else if (separation.x < -1)
-        separation.x = -1;
-
-    if (separation.y > 1)
-        separation.y = 1;
-    else if (separation.y < -1)
-        separation.y = -1;
-
-    // ----------------------------------
-    // Alignment
-    // ----------------------------------
-    Vector2 alignment =
-        CalculateAlignment();
-
-    // ----------------------------------
-    // Cohesion
-    // ----------------------------------
-    Vector2 cohesion =
-        CalculateCohesion();
-
-    // ----------------------------------
-    // 최종 군중 방향
-    // ----------------------------------
-    Vector2 result{ 0, 0 };
-
-    result.x =
-        separation.x +
-        alignment.x +
-        cohesion.x;
-
-    result.y =
-        separation.y +
-        alignment.y +
-        cohesion.y;
-
-    // 최종적으로 너무 큰 보정 방지
-    if (result.x > 1)
-        result.x = 1;
-    else if (result.x < -1)
-        result.x = -1;
-
-    if (result.y > 1)
-        result.y = 1;
-    else if (result.y < -1)
-        result.y = -1;
-
-    return result;
-}
-
-Craft::Vector2 Zombie::CalculateCohesion()
-{
-    Vector2 cohesion{ 0, 0 };
-
-    if (gameLevel == nullptr)
-        return cohesion;
-
-    auto nearbyActors =
-        gameLevel->GetQuadTree().QueryRange(
-            GetPosition(),
-            100.0f
-        );
-
-    int totalX = 0;
-    int totalY = 0;
-    int count = 0;
 
     for (Actor* actor : nearbyActors)
     {
@@ -337,32 +223,297 @@ Craft::Vector2 Zombie::CalculateCohesion()
         if (zombie == nullptr)
             continue;
 
-        totalX += zombie->GetPosition().x;
-        totalY += zombie->GetPosition().y;
+        float dx =
+            positionX -
+            static_cast<float>(zombie->GetPosition().x);
 
-        count++;
+        float dy =
+            positionY -
+            static_cast<float>(zombie->GetPosition().y);
+
+        float distance =
+            std::sqrt(dx * dx + dy * dy);
+
+        if (distance <= 0.0001f)
+            continue;
+
+        const float separationRadius = 2.0f;
+
+        if (distance < separationRadius)
+        {
+            float strength =
+                (separationRadius - distance) /
+                separationRadius;
+
+            separation.x +=
+                (dx / distance) * strength;
+
+            separation.y +=
+                (dy / distance) * strength;
+        }
     }
 
-    if (count == 0)
+    return separation;
+}
+
+Zombie::CrowdVelocity Zombie::CalculateAlignment()
+{
+    CrowdVelocity alignment{ 0.0f, 0.0f };
+
+    if (gameLevel == nullptr)
+        return alignment;
+
+    auto nearbyActors =
+        gameLevel->GetQuadTree().QueryRange(
+            GetPosition(),
+            5.0f
+        );
+
+    int neighborCount = 0;
+
+    for (Actor* actor : nearbyActors)
+    {
+        if (actor == nullptr || actor == this)
+            continue;
+
+        Zombie* zombie =
+            dynamic_cast<Zombie*>(actor);
+
+        if (zombie == nullptr)
+            continue;
+
+        alignment.x += zombie->GetVelocity().x;
+        alignment.y += zombie->GetVelocity().y;
+
+        ++neighborCount;
+    }
+
+    if (neighborCount == 0)
+        return alignment;
+
+    alignment.x /= neighborCount;
+    alignment.y /= neighborCount;
+
+    float length =
+        std::sqrt(
+            alignment.x * alignment.x +
+            alignment.y * alignment.y
+        );
+
+    if (length > 0.0f)
+    {
+        alignment.x /= length;
+        alignment.y /= length;
+    }
+
+    return alignment;
+}
+
+Zombie::CrowdVelocity Zombie::CalculateCohesion()
+{
+    CrowdVelocity cohesion{ 0, 0 };
+
+    if (gameLevel == nullptr)
         return cohesion;
 
-    int centerX = totalX / count;
-    int centerY = totalY / count;
+    auto nearbyActors =
+        gameLevel->GetQuadTree().QueryRange(
+            GetPosition(),
+            5.0f
+        );
 
-    Vector2 direction =
-        Vector2(centerX, centerY) - GetPosition();
+    int neighborCount = 0;
 
-    if (direction.x > 0)
-        cohesion.x = 1;
-    else if (direction.x < 0)
-        cohesion.x = -1;
+    float averageX = 0.0f;
+    float averageY = 0.0f;
 
-    if (direction.y > 0)
-        cohesion.y = 1;
-    else if (direction.y < 0)
-        cohesion.y = -1;
+    for (Actor* actor : nearbyActors)
+    {
+        if (actor == nullptr || actor == this)
+            continue;
+
+        Zombie* zombie =
+            dynamic_cast<Zombie*>(actor);
+
+        if (zombie == nullptr)
+            continue;
+
+        averageX += static_cast<float>(
+            zombie->GetPosition().x);
+
+        averageY += static_cast<float>(
+            zombie->GetPosition().y);
+
+        ++neighborCount;
+    }
+
+    if (neighborCount == 0)
+        return cohesion;
+
+    averageX /= neighborCount;
+    averageY /= neighborCount;
+
+    cohesion.x =
+        averageX - static_cast<float>(GetPosition().x);
+
+    cohesion.y =
+        averageY - static_cast<float>(GetPosition().y);
+
+    float length =
+        std::sqrt(
+            cohesion.x * cohesion.x +
+            cohesion.y * cohesion.y
+        );
+
+    if (length > 0.0f)
+    {
+        cohesion.x /= length;
+        cohesion.y /= length;
+    }
 
     return cohesion;
+}
+
+Zombie::CrowdVelocity Zombie::CalculateBoidsSteering()
+{
+    CrowdVelocity separation = CalculateSeparation();
+    CrowdVelocity alignment = CalculateAlignment();
+    CrowdVelocity cohesion = CalculateCohesion();
+
+    CrowdVelocity steering{};
+
+    steering.x =
+        separation.x * separationWeight +
+        alignment.x * alignmentWeight +
+        cohesion.x * cohesionWeight;
+
+    steering.y =
+        separation.y * separationWeight +
+        alignment.y * alignmentWeight +
+        cohesion.y * cohesionWeight;
+
+    float length =
+        std::sqrt(
+            steering.x * steering.x +
+            steering.y * steering.y
+        );
+
+    if (length > 1.0f)
+    {
+        steering.x /= length;
+        steering.y /= length;
+    }
+
+    return steering;
+}
+
+Zombie::CrowdVelocity Zombie::CalculatePathDirection()
+{
+    CrowdVelocity direction{};
+
+    if (path.empty())
+        return direction;
+
+    if (currentPathIndex >= path.size())
+        return direction;
+
+    Vector2 nextPosition = path[currentPathIndex];
+
+    float dx =
+        static_cast<float>(nextPosition.x) - positionX;
+
+    float dy =
+        static_cast<float>(nextPosition.y) - positionY;
+
+    float length =
+        std::sqrt(dx * dx + dy * dy);
+
+    if (length <= 0.0f)
+        return direction;
+
+    direction.x = dx / length;
+    direction.y = dy / length;
+
+    return direction;
+}
+
+Zombie::CrowdVelocity Zombie::CalculateFinalDirection()
+{
+    CrowdVelocity pathDirection = CalculatePathDirection();
+    CrowdVelocity boidsDirection = CalculateBoidsSteering();
+
+    CrowdVelocity finalDirection{};
+
+    const float pathWeight = 1.0f;
+    const float boidsWeight = 0.1f;
+
+    finalDirection.x =
+        pathDirection.x * pathWeight +
+        boidsDirection.x * boidsWeight;
+
+    finalDirection.y =
+        pathDirection.y * pathWeight +
+        boidsDirection.y * boidsWeight;
+
+    float length =
+        std::sqrt(
+            finalDirection.x * finalDirection.x +
+            finalDirection.y * finalDirection.y
+        );
+
+    if (length > 0.0f)
+    {
+        finalDirection.x /= length;
+        finalDirection.y /= length;
+    }
+
+    return finalDirection;
+}
+
+void Zombie::ClearTargetActor()
+{
+    targetActor.reset();
+}
+
+void Zombie::SetSurroundSlot(int slot)
+{
+    surroundSlot = slot;
+}
+
+const Zombie::CrowdVelocity& Zombie::GetVelocity() const
+{
+    return velocity;
+}
+
+Craft::Vector2 Zombie::CalculateSurroundPosition()
+{
+    auto target = targetActor.lock();
+
+    if (target == nullptr)
+    {
+        return GetPosition();
+    }
+
+    Vector2 targetPosition = target->GetPosition();
+
+    const Vector2 positions[8] =
+    {
+        { -1, -1 }, // 0
+        {  0, -1 }, // 1
+        {  1, -1 }, // 2
+        { -1,  0 }, // 3
+        {  1,  0 }, // 4
+        { -1,  1 }, // 5
+        {  0,  1 }, // 6
+        {  1,  1 }  // 7
+    };
+
+    if (surroundSlot < 0 || surroundSlot >= 8)
+    {
+        return GetPosition();
+    }
+
+    return targetPosition + positions[surroundSlot];
 }
 
 void Zombie::DebugDraw()

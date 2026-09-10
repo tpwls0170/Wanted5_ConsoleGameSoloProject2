@@ -6,6 +6,7 @@ class GameOver : public Craft::Level
 public:
 	GameOver();
 private:
+	virtual void Tick(float deltaTime) override;
 	void DebugDraw();
 
 private:

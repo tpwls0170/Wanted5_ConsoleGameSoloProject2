@@ -29,13 +29,14 @@ private:
 
 private:
 	Craft::Astar astar;
-	float moveSpeed = 0.0f;
-	float elapsedTime = 0.0f;
+	float moveSpeed = 2.0f;
 	int currentPathIndex = 1;
 	std::vector<Craft::Vector2> path;
 	Craft::Vector2 target;
 	GameLevel* gameLevel = nullptr;
 	std::weak_ptr<Gimmick_Exit> targetExitGimmick;
+	float positionX = 0.0f;
+	float positionY = 0.0f;
 
 	float debugElapsedTime = 0.0f;
 	bool showDebugPath = false;
