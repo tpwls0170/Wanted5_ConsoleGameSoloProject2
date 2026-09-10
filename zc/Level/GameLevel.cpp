@@ -207,7 +207,7 @@ void GameLevel::DrawUI()
 {
 	const int uiX = 50;
 	const int uiY = 35;
-	const int buttonWidth = 11;
+	const int buttonWidth = 18;
 	const int buttonHight = 3;
 
 	Craft::Renderer::Get().Submit(
@@ -218,23 +218,23 @@ void GameLevel::DrawUI()
 
 	exitButton = { Craft::Vector2(2, uiY + 1) , buttonWidth, buttonHight, BuildType::Exit };
 	Craft::Renderer::Get().Submit(
-		L"🚪 EXIT",
+		L"🚪 EXIT X " + std::to_wstring(gameSetting.shelterMaxCount - shelterCount),
 		Craft::Vector2(exitButton.position.x + 1, exitButton.position.y + 1),
 		Craft::Color::White, 2
 	);
 	DrawButtonUI(exitButton);
 
-	wallButton = { Craft::Vector2(18, uiY + 1) , buttonWidth, buttonHight, BuildType::Wall };
+	wallButton = { Craft::Vector2(21, uiY + 1) , buttonWidth, buttonHight, BuildType::Wall };
 	Craft::Renderer::Get().Submit(
-		L"🚪 WALL",
+		L"🚪 WALL X " + std::to_wstring(gameSetting.wallMaxCount - wallCount),
 		Craft::Vector2(wallButton.position.x + 1, wallButton.position.y + 1),
 		Craft::Color::White, 2
 	);
 	DrawButtonUI(wallButton);
 
-	policeButton = { Craft::Vector2(34, uiY + 1) , buttonWidth, buttonHight, BuildType::Police };
+	policeButton = { Craft::Vector2(40, uiY + 1) , buttonWidth, buttonHight, BuildType::Police };
 	Craft::Renderer::Get().Submit(
-		L"👮 POLICE",
+		L"👮 POLICE X " + std::to_wstring(gameSetting.policeMaxCount - policeCount),
 		Craft::Vector2(policeButton.position.x + 1, policeButton.position.y + 1),
 		Craft::Color::White, 2
 	);
@@ -242,13 +242,13 @@ void GameLevel::DrawUI()
 
 	Craft::Renderer::Get().Submit(
 		L"SelectActor : " + GetBuildTypeName(selectBuildType),
-		Craft::Vector2(uiX, uiY + 2),
+		Craft::Vector2(uiX + 10, uiY + 2),
 		Craft::Color::White, 2
 	);
 
 	Craft::Renderer::Get().Submit(
 		L"Start▶ : SPACE Key",
-		Craft::Vector2(uiX + 25, uiY + 2),
+		Craft::Vector2(uiX + 30, uiY + 2),
 		Craft::Color::White, 2
 	);
 
